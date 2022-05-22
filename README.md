@@ -1,14 +1,29 @@
-# Welcome to your CDK TypeScript project
+This repo contains Demo Code for a CDK pipeline using which we can deploy stack cross account.
+Pre requisite for deploying cross account , do CDK bootstrap in account 2 as:
 
-This is a blank project for CDK development with TypeScript.
+npx cdk bootstrap --trust Account-1 --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess aws://Account-2/us-east-1
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Once boot strap is done , you can run the CDK pipeline.
 
-## Useful commands
+How CDK pipeline works ?
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+-> Initially , we create a Empty CDK pipeline with a repository configured and deploy it to our account.
+-> Next , we push the CDK code to the repository.
+-> Now , we make changes to the code and push them to the repo , this causes CDK pipeline to run. First it mutates the pipeline and then deploys the stacks.
+
+In this example , we are deploying to two accounts and passing props to those stacks.
+Example: (lib/pipline-stage.ts)
+
+        new SqsStack(this, 'sqs', {
+            env: { account: accountA , region: 'us-east-1'},
+            prefix: 'testing'
+        } );
+
+Here we are passing prefix to the stack which will be created in account A by pipeline and using it to name resource as: (lib/sqs-stack.ts)
+
+const deadLetterQueue = new sqs.Queue(this, 'DeadLetterQueue',{
+queueName : props.prefix+' my-queue'
+});
+}
+
+This creates resources with a prefix in prod, test , dev accounts.
